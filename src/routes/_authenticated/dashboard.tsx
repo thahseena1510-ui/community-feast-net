@@ -80,27 +80,30 @@ function Dashboard() {
       </div>
 
       <div className="mt-8 grid gap-4 sm:grid-cols-3">
-        {stats && isAdmin && "total" in stats && (
-          <>
-            <StatCard label="Total donations" value={stats.total} />
-            <StatCard label="Delivered" value={stats.delivered} />
-            <StatCard label="NGOs registered" value={stats.ngos} />
-          </>
-        )}
-        {stats && isNgo && !isAdmin && "available" in stats && (
-          <>
-            <StatCard label="Available now" value={stats.available} />
-            <StatCard label="My pickups" value={stats.mine} />
-            <StatCard label="Delivered" value={stats.delivered} />
-          </>
-        )}
-        {stats && !isNgo && !isAdmin && "posted" in stats && (
-          <>
-            <StatCard label="Donations posted" value={stats.posted} />
-            <StatCard label="Pending" value={stats.pending} />
-            <StatCard label="Delivered" value={stats.delivered} />
-          </>
-        )}
+        {stats && isAdmin && (() => {
+          const s = stats as { total: number; delivered: number; ngos: number };
+          return (<>
+            <StatCard label="Total donations" value={s.total} />
+            <StatCard label="Delivered" value={s.delivered} />
+            <StatCard label="NGOs registered" value={s.ngos} />
+          </>);
+        })()}
+        {stats && isNgo && !isAdmin && (() => {
+          const s = stats as { available: number; mine: number; delivered: number };
+          return (<>
+            <StatCard label="Available now" value={s.available} />
+            <StatCard label="My pickups" value={s.mine} />
+            <StatCard label="Delivered" value={s.delivered} />
+          </>);
+        })()}
+        {stats && !isNgo && !isAdmin && (() => {
+          const s = stats as { posted: number; pending: number; delivered: number };
+          return (<>
+            <StatCard label="Donations posted" value={s.posted} />
+            <StatCard label="Pending" value={s.pending} />
+            <StatCard label="Delivered" value={s.delivered} />
+          </>);
+        })()}
       </div>
 
       {isNgo && !profile?.ngo_verified && (
