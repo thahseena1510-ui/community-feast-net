@@ -80,21 +80,21 @@ function Dashboard() {
       </div>
 
       <div className="mt-8 grid gap-4 sm:grid-cols-3">
-        {isAdmin && stats && (
+        {stats && isAdmin && "total" in stats && (
           <>
             <StatCard label="Total donations" value={stats.total} />
             <StatCard label="Delivered" value={stats.delivered} />
             <StatCard label="NGOs registered" value={stats.ngos} />
           </>
         )}
-        {isNgo && stats && (
+        {stats && isNgo && !isAdmin && "available" in stats && (
           <>
             <StatCard label="Available now" value={stats.available} />
             <StatCard label="My pickups" value={stats.mine} />
             <StatCard label="Delivered" value={stats.delivered} />
           </>
         )}
-        {!isNgo && !isAdmin && stats && (
+        {stats && !isNgo && !isAdmin && "posted" in stats && (
           <>
             <StatCard label="Donations posted" value={stats.posted} />
             <StatCard label="Pending" value={stats.pending} />

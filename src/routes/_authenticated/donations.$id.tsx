@@ -65,10 +65,13 @@ function DonationDetail() {
 
   async function updateStatus(status: "accepted" | "picked_up" | "delivered" | "cancelled") {
     if (!user) return;
-    const patch: Record<string, unknown> = { status };
-    if (status === "accepted") { patch.accepted_by_ngo_id = user.id; patch.accepted_at = new Date().toISOString(); }
-    if (status === "picked_up") patch.picked_up_at = new Date().toISOString();
-    if (status === "delivered") patch.delivered_at = new Date().toISOString();
+    const now = new Date().toISOString();
+    const patch = {
+      status,
+      ...(status === "accepted" ? { accepted_by_ngo_id: user.id, accepted_at: now } : {}),
+      ...(status === "picked_up" ? { picked_up_at: now } : {}),
+      ...(status === "delivered" ? { delivered_at: now } : {}),
+    };
     const { error } = await supabase.from("donations").update(patch).eq("id", id);
     if (error) toast.error(error.message);
     else toast.success(`Marked as ${donationStatusLabel(status)}`);
