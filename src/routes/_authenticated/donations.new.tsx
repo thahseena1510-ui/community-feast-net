@@ -46,7 +46,7 @@ function NewDonation() {
     if (!user) return;
     const parsed = schema.safeParse(form);
     if (!parsed.success) return toast.error(parsed.error.issues[0].message);
-    if (new Date(form.expiry_time).getTime() <= Date.now()) return toast.error("Expiry must be in the future");
+    if (new Date(form.expiry_time).getTime() < Date.now() - 60_000) return toast.error("Pickup time must be in the future");
     setBusy(true);
     let image_url: string | null = null;
     if (image) {
