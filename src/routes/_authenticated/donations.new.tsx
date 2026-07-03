@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { AddressAutocomplete } from "@/components/AddressAutocomplete";
 
 export const Route = createFileRoute("/_authenticated/donations/new")({
   head: () => ({ meta: [{ title: "Post donation — FoodShare" }] }),
@@ -95,17 +96,16 @@ function NewDonation() {
         </div>
         <div>
           <Label htmlFor="addr">Pickup address *</Label>
-          <Textarea id="addr" value={form.pickup_address} onChange={(e) => setForm({ ...form, pickup_address: e.target.value })} required maxLength={300} rows={2} />
-        </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <Label htmlFor="lat">Latitude (optional)</Label>
-            <Input id="lat" type="number" step="any" value={form.lat} onChange={(e) => setForm({ ...form, lat: e.target.value })} />
-          </div>
-          <div>
-            <Label htmlFor="lng">Longitude (optional)</Label>
-            <Input id="lng" type="number" step="any" value={form.lng} onChange={(e) => setForm({ ...form, lng: e.target.value })} />
-          </div>
+          <AddressAutocomplete
+            id="addr"
+            value={form.pickup_address}
+            onChange={(v) => setForm({ ...form, pickup_address: v })}
+            onPick={(p) => setForm({ ...form, pickup_address: p.address, lat: String(p.lat), lng: String(p.lng) })}
+            placeholder="Start typing an address…"
+          />
+          {form.lat && form.lng && (
+            <p className="mt-1 text-xs text-muted-foreground">Location set · {Number(form.lat).toFixed(4)}, {Number(form.lng).toFixed(4)}</p>
+          )}
         </div>
         <div>
           <Label htmlFor="exp">Pickup by *</Label>

@@ -180,6 +180,30 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_donation_trends: {
+        Args: { days?: number }
+        Returns: {
+          day: string
+          delivered: number
+          posted: number
+        }[]
+      }
+      get_platform_stats: {
+        Args: never
+        Returns: {
+          active_ngos: number
+          delivered: number
+          in_progress: number
+          total_donations: number
+        }[]
+      }
+      get_status_breakdown: {
+        Args: never
+        Returns: {
+          count: number
+          status: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
