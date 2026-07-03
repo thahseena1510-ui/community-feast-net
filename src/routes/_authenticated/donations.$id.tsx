@@ -115,6 +115,14 @@ function DonationDetail() {
             </div>
           </div>
 
+          {donation.lat != null && donation.lng != null && (
+            <>
+              <hr className="my-6" />
+              <h2 className="mb-3 text-sm font-medium text-muted-foreground">Pickup location</h2>
+              <PickupMap lat={donation.lat} lng={donation.lng} label={donation.food_name} />
+            </>
+          )}
+
           <hr className="my-6" />
           <h2 className="text-sm font-medium text-muted-foreground">Progress</h2>
           <ol className="mt-3 space-y-3">
