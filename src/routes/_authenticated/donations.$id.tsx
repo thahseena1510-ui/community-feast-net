@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { donationStatusLabel } from "@/lib/distance";
+import { PickupMap } from "@/components/PickupMap";
 
 export const Route = createFileRoute("/_authenticated/donations/$id")({
   head: () => ({ meta: [{ title: "Donation — FoodShare" }] }),
