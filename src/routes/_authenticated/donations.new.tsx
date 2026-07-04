@@ -113,8 +113,9 @@ function NewDonation() {
           )}
         </div>
         <div>
-          <Label htmlFor="exp">Pickup by *</Label>
-          <Input id="exp" type="datetime-local" value={form.expiry_time} onChange={(e) => setForm({ ...form, expiry_time: e.target.value })} required />
+          <Label>Pickup by *</Label>
+          <PickupDateTime value={form.expiry_time} onChange={(v) => setForm({ ...form, expiry_time: v })} />
+          <p className="mt-1 text-xs text-muted-foreground">Latest time an NGO can pick this up.</p>
         </div>
         <Button type="submit" disabled={busy} className="w-full">{busy ? "Posting…" : "Post donation"}</Button>
       </form>
