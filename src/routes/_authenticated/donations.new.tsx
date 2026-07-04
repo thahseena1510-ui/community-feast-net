@@ -115,7 +115,7 @@ function NewDonation() {
           )}
         </div>
         <div>
-          <Label>Pickup by *</Label>
+          <Label>Date & time to donate *</Label>
           <PickupDateTime value={form.expiry_time} onChange={(v) => setForm({ ...form, expiry_time: v })} />
           <p className="mt-1 text-xs text-muted-foreground">Latest time an NGO can pick this up.</p>
         </div>
