@@ -44,9 +44,13 @@ function NewDonation() {
     lng: "",
   });
 
+  if (loading) {
+    return <div className="p-8 text-sm text-muted-foreground">Loading…</div>;
+  }
   if (!roles.includes("donor") && !roles.includes("admin")) {
     return <div className="p-8 text-sm text-muted-foreground">Only donors can post donations.</div>;
   }
+
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
