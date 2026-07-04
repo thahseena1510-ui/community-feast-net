@@ -122,3 +122,56 @@ function NewDonation() {
     </div>
   );
 }
+
+function PickupDateTime({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [datePart, timePart] = value ? value.split("T") : ["", ""];
+  const date = datePart ? new Date(datePart + "T00:00:00") : undefined;
+  const time = timePart || "";
+
+  const setDate = (d: Date | undefined) => {
+    if (!d) return;
+    const ds = format(d, "yyyy-MM-dd");
+    onChange(`${ds}T${time || "12:00"}`);
+  };
+  const setTime = (t: string) => {
+    const ds = datePart || format(new Date(), "yyyy-MM-dd");
+    onChange(`${ds}T${t}`);
+  };
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  return (
+    <div className="flex flex-col gap-2 sm:flex-row">
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button
+            type="button"
+            variant="outline"
+            className={cn("w-full justify-start text-left font-normal sm:w-[220px]", !date && "text-muted-foreground")}
+          >
+            <CalendarIcon />
+            {date ? format(date, "PPP") : <span>Pick a date</span>}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align="start">
+          <Calendar
+            mode="single"
+            selected={date}
+            onSelect={setDate}
+            disabled={(d) => d < today}
+            initialFocus
+            className={cn("p-3 pointer-events-auto")}
+          />
+        </PopoverContent>
+      </Popover>
+      <Input
+        type="time"
+        value={time}
+        onChange={(e) => setTime(e.target.value)}
+        className="sm:w-[140px]"
+        required
+      />
+    </div>
+  );
+}
