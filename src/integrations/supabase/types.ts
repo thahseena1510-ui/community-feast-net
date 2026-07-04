@@ -211,6 +211,11 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_donation_counterparty: {
+        Args: { _profile_id: string; _viewer: string }
+        Returns: boolean
+      }
+      is_verified_ngo: { Args: { _uid: string }; Returns: boolean }
     }
     Enums: {
       app_role: "donor" | "ngo" | "admin"
