@@ -29,9 +29,10 @@ const schema = z.object({
 });
 
 function NewDonation() {
-  const { user, roles } = useAuth();
+  const { user, roles, loading } = useAuth();
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
+
   const [image, setImage] = useState<File | null>(null);
   const [form, setForm] = useState({
     food_name: "",
