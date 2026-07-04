@@ -177,7 +177,24 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      ngo_directory: {
+        Row: {
+          id: string | null
+          ngo_name: string | null
+          ngo_verified: boolean | null
+        }
+        Insert: {
+          id?: string | null
+          ngo_name?: string | null
+          ngo_verified?: boolean | null
+        }
+        Update: {
+          id?: string | null
+          ngo_name?: string | null
+          ngo_verified?: boolean | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       get_donation_trends: {
