@@ -97,13 +97,10 @@ function NewDonation() {
           <Input id="qty" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} required maxLength={60} placeholder="e.g. 20 meals / 5 kg" />
         </div>
         <div>
-          <Label htmlFor="dsc">Description</Label>
-          <Textarea id="dsc" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} maxLength={500} rows={3} placeholder="Anything the NGO should know — packaging, dietary info, etc." />
+          <Label htmlFor="img">Food photo *</Label>
+          <Input id="img" type="file" accept="image/*" onChange={(e) => setImage(e.target.files?.[0] ?? null)} required />
         </div>
-        <div>
-          <Label htmlFor="img">Photo</Label>
-          <Input id="img" type="file" accept="image/*" onChange={(e) => setImage(e.target.files?.[0] ?? null)} />
-        </div>
+
         <div>
           <Label htmlFor="addr">Pickup address *</Label>
           <AddressAutocomplete
