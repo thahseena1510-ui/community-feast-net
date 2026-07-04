@@ -29,9 +29,10 @@ const schema = z.object({
 });
 
 function NewDonation() {
-  const { user, roles } = useAuth();
+  const { user, roles, loading } = useAuth();
   const navigate = useNavigate();
   const [busy, setBusy] = useState(false);
+
   const [image, setImage] = useState<File | null>(null);
   const [form, setForm] = useState({
     food_name: "",
@@ -43,9 +44,13 @@ function NewDonation() {
     lng: "",
   });
 
+  if (loading) {
+    return <div className="p-8 text-sm text-muted-foreground">Loading…</div>;
+  }
   if (!roles.includes("donor") && !roles.includes("admin")) {
     return <div className="p-8 text-sm text-muted-foreground">Only donors can post donations.</div>;
   }
+
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
