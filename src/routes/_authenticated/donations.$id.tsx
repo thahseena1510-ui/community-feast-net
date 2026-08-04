@@ -23,10 +23,17 @@ function DonationDetail() {
   const isNgo = roles.includes("ngo");
   const isAdmin = roles.includes("admin");
 
+  const { data: myProfile } = useQuery({
+    queryKey: ["profile", user?.id],
+    queryFn: async () => (await supabase.from("profiles").select("ngo_verified,phone,address").eq("id", user!.id).single()).data,
+    enabled: !!user,
+  });
+
   const { data: donation, refetch } = useQuery({
     queryKey: ["donation", id],
     queryFn: async () => (await supabase.from("donations").select("*").eq("id", id).single()).data,
   });
+
 
   const { data: donorProfile } = useQuery({
     queryKey: ["profile", donation?.donor_id],
