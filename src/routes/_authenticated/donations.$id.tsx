@@ -69,7 +69,10 @@ function DonationDetail() {
 
   const isMyDonation = donation.donor_id === user?.id;
   const isAcceptedByMe = donation.accepted_by_ngo_id === user?.id;
-  const canAccept = isNgo && donation.status === "pending";
+  const isVerifiedNgo = isNgo && !!myProfile?.ngo_verified;
+  const profileComplete = !!myProfile?.phone && !!myProfile?.address;
+  const canAccept = isVerifiedNgo && donation.status === "pending";
+  const blockedFromAccepting = isNgo && !isVerifiedNgo && donation.status === "pending";
 
   async function updateStatus(status: "accepted" | "picked_up" | "delivered" | "cancelled") {
     if (!user) return;
@@ -81,9 +84,19 @@ function DonationDetail() {
       ...(status === "delivered" ? { delivered_at: now } : {}),
     };
     const { error } = await supabase.from("donations").update(patch).eq("id", id);
-    if (error) toast.error(error.message);
-    else toast.success(`Marked as ${donationStatusLabel(status)}`);
+    if (error) {
+      toast.error(
+        /row-level security/i.test(error.message)
+          ? status === "accepted"
+            ? "You can't accept this donation — your NGO needs admin verification, or it was just taken by another NGO."
+            : "You don't have permission to update this donation."
+          : error.message,
+      );
+      return;
+    }
+    toast.success(`Marked as ${donationStatusLabel(status)}`);
   }
+
 
   const stages: { key: string; label: string; ts: string | null }[] = [
     { key: "pending", label: "Posted", ts: donation.created_at },
