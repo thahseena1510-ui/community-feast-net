@@ -185,8 +185,23 @@ function DonationDetail() {
             </>
           )}
 
+          {blockedFromAccepting && (
+            <div className="mt-6 rounded-md border border-yellow-500/40 bg-yellow-500/5 p-3 text-sm">
+              Your NGO is awaiting admin verification, so you can't accept donations yet.
+              {!profileComplete && (
+                <> Completing your profile helps admins verify you faster — <Link to="/onboarding" className="underline">finish it now</Link>.</>
+              )}
+            </div>
+          )}
+          {canAccept && !profileComplete && (
+            <div className="mt-6 rounded-md border p-3 text-sm text-muted-foreground">
+              Add a contact phone and address on your <Link to="/onboarding" className="underline">profile</Link> so donors can reach you.
+            </div>
+          )}
+
           <div className="mt-6 flex flex-wrap gap-2">
             {canAccept && <Button onClick={() => updateStatus("accepted")}>Accept donation</Button>}
+
             {isAcceptedByMe && donation.status === "accepted" && <Button onClick={() => updateStatus("picked_up")}>Mark picked up</Button>}
             {isAcceptedByMe && donation.status === "picked_up" && <Button onClick={() => updateStatus("delivered")}>Mark delivered</Button>}
             {isMyDonation && donation.status === "pending" && (
