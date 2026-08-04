@@ -95,32 +95,51 @@ function GoogleButton() {
   );
 }
 
+function FieldError({ msg }: { msg?: string }) {
+  return msg ? <p className="mt-1 text-xs text-destructive">{msg}</p> : null;
+}
+
 function SignInForm() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [errors, setErrors] = useState<{ email?: string; password?: string; form?: string }>({});
   const [busy, setBusy] = useState(false);
   return (
     <form
       className="mt-4 space-y-4"
+      noValidate
       onSubmit={async (e) => {
         e.preventDefault();
+        const next: typeof errors = {};
         const em = emailSchema.safeParse(email);
-        if (!em.success) return toast.error("Enter a valid email");
+        if (!em.success) next.email = em.error.issues[0].message;
+        if (!password) next.password = "Enter your password";
+        setErrors(next);
+        if (Object.keys(next).length) return;
         setBusy(true);
-        const { error } = await supabase.auth.signInWithPassword({ email: em.data, password });
+        const { error } = await supabase.auth.signInWithPassword({ email: em.data!, password });
         setBusy(false);
-        if (error) return toast.error(error.message);
+        if (error) {
+          const message = authErrorMessage(error);
+          setErrors({ form: message });
+          return toast.error(message);
+        }
         navigate({ to: "/dashboard" });
       }}
     >
+      {errors.form && (
+        <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">{errors.form}</div>
+      )}
       <div>
         <Label htmlFor="si-email">Email</Label>
-        <Input id="si-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+        <Input id="si-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} aria-invalid={!!errors.email} />
+        <FieldError msg={errors.email} />
       </div>
       <div>
         <Label htmlFor="si-pw">Password</Label>
-        <Input id="si-pw" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+        <Input id="si-pw" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} aria-invalid={!!errors.password} />
+        <FieldError msg={errors.password} />
       </div>
       <Button type="submit" className="w-full" disabled={busy}>{busy ? "Signing in…" : "Sign in"}</Button>
       <div className="relative my-2"><div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div><div className="relative flex justify-center text-xs uppercase"><span className="bg-background px-2 text-muted-foreground">or</span></div></div>
@@ -137,32 +156,67 @@ function SignUpForm() {
   const [ngoName, setNgoName] = useState("");
   const [role, setRole] = useState<"donor" | "ngo">("donor");
   const [busy, setBusy] = useState(false);
+  const [errors, setErrors] = useState<{ email?: string; password?: string; fullName?: string; ngoName?: string; form?: string }>({});
+  const [checkEmail, setCheckEmail] = useState(false);
+
+  if (checkEmail) {
+    return (
+      <div className="mt-6 rounded-md border p-4 text-sm">
+        <p className="font-medium">Confirm your email to finish</p>
+        <p className="mt-1 text-muted-foreground">
+          We sent a verification link to <span className="font-medium text-foreground">{email}</span>. Open it to activate your
+          account{role === "ngo" ? ", then complete your NGO profile so an admin can verify you." : "."}
+        </p>
+      </div>
+    );
+  }
 
   return (
     <form
       className="mt-4 space-y-4"
+      noValidate
       onSubmit={async (e) => {
         e.preventDefault();
+        const next: typeof errors = {};
         const em = emailSchema.safeParse(email);
-        if (!em.success) return toast.error("Enter a valid email");
+        if (!em.success) next.email = em.error.issues[0].message;
         const pw = passwordSchema.safeParse(password);
-        if (!pw.success) return toast.error("Password must be at least 8 characters");
-        if (role === "ngo" && !ngoName.trim()) return toast.error("NGO name is required");
+        if (!pw.success) next.password = pw.error.issues[0].message;
+        if (fullName.trim().length < 2) next.fullName = "Enter your full name";
+        if (role === "ngo" && ngoName.trim().length < 2) next.ngoName = "Enter your organisation name";
+        setErrors(next);
+        if (Object.keys(next).length) {
+          toast.error("Please fix the highlighted fields");
+          return;
+        }
         setBusy(true);
-        const { error } = await supabase.auth.signUp({
-          email: em.data,
-          password: pw.data,
+        const { data, error } = await supabase.auth.signUp({
+          email: em.data!,
+          password: pw.data!,
           options: {
-            emailRedirectTo: window.location.origin + "/dashboard",
-            data: { full_name: fullName, role, ngo_name: role === "ngo" ? ngoName : null },
+            emailRedirectTo: window.location.origin + "/onboarding",
+            data: { full_name: fullName.trim(), role, ngo_name: role === "ngo" ? ngoName.trim() : null },
           },
         });
         setBusy(false);
-        if (error) return toast.error(error.message);
-        toast.success(role === "ngo" ? "Account created. An admin will verify your NGO before you can accept donations." : "Account created!");
-        navigate({ to: "/dashboard" });
+        if (error) {
+          const message = authErrorMessage(error);
+          setErrors({ form: message });
+          return toast.error(message);
+        }
+        // No session means email confirmation is required.
+        if (!data.session) {
+          setCheckEmail(true);
+          toast.success("Account created — check your email to confirm.");
+          return;
+        }
+        toast.success(role === "ngo" ? "Account created. Complete your profile so an admin can verify your NGO." : "Account created!");
+        navigate({ to: "/onboarding" });
       }}
     >
+      {errors.form && (
+        <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">{errors.form}</div>
+      )}
       <div>
         <Label>I am a…</Label>
         <RadioGroup value={role} onValueChange={(v) => setRole(v as "donor" | "ngo")} className="mt-2 grid grid-cols-2 gap-2">
@@ -173,24 +227,34 @@ function SignUpForm() {
             <RadioGroupItem value="ngo" /> NGO
           </label>
         </RadioGroup>
+        {role === "ngo" && (
+          <p className="mt-2 text-xs text-muted-foreground">
+            NGO accounts are reviewed by an admin before they can accept donations.
+          </p>
+        )}
       </div>
       <div>
         <Label htmlFor="su-name">{role === "ngo" ? "Your name" : "Full name"}</Label>
-        <Input id="su-name" value={fullName} onChange={(e) => setFullName(e.target.value)} required maxLength={100} />
+        <Input id="su-name" value={fullName} onChange={(e) => setFullName(e.target.value)} maxLength={100} aria-invalid={!!errors.fullName} />
+        <FieldError msg={errors.fullName} />
       </div>
       {role === "ngo" && (
         <div>
           <Label htmlFor="su-ngo">NGO name</Label>
-          <Input id="su-ngo" value={ngoName} onChange={(e) => setNgoName(e.target.value)} required maxLength={150} />
+          <Input id="su-ngo" value={ngoName} onChange={(e) => setNgoName(e.target.value)} maxLength={150} aria-invalid={!!errors.ngoName} />
+          <FieldError msg={errors.ngoName} />
         </div>
       )}
       <div>
         <Label htmlFor="su-email">Email</Label>
-        <Input id="su-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+        <Input id="su-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} aria-invalid={!!errors.email} />
+        <FieldError msg={errors.email} />
       </div>
       <div>
         <Label htmlFor="su-pw">Password</Label>
-        <Input id="su-pw" type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={8} />
+        <Input id="su-pw" type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} aria-invalid={!!errors.password} />
+        <FieldError msg={errors.password} />
+        <p className="mt-1 text-xs text-muted-foreground">At least 8 characters, with a letter and a number. Avoid common passwords.</p>
       </div>
       <Button type="submit" className="w-full" disabled={busy}>{busy ? "Creating…" : "Create account"}</Button>
       <div className="relative my-2"><div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div><div className="relative flex justify-center text-xs uppercase"><span className="bg-background px-2 text-muted-foreground">or</span></div></div>
@@ -198,3 +262,4 @@ function SignUpForm() {
     </form>
   );
 }
+
