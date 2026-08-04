@@ -16,8 +16,36 @@ export const Route = createFileRoute("/auth")({
   component: AuthPage,
 });
 
-const emailSchema = z.string().trim().email().max(255);
-const passwordSchema = z.string().min(8).max(72);
+const emailSchema = z.string().trim().email("Enter a valid email address").max(255);
+const passwordSchema = z
+  .string()
+  .min(8, "Password must be at least 8 characters")
+  .max(72, "Password must be 72 characters or fewer")
+  .regex(/[A-Za-z]/, "Password must include a letter")
+  .regex(/\d/, "Password must include a number");
+
+// Turns backend auth failures into something a person can act on.
+function authErrorMessage(err: { message: string; code?: string; status?: number }) {
+  const code = err.code ?? "";
+  const msg = err.message ?? "";
+  if (code === "weak_password" || /known to be weak/i.test(msg))
+    return "That password appears in known data breaches. Please choose a stronger, unique one.";
+  if (code === "user_already_exists" || /already registered/i.test(msg))
+    return "An account with this email already exists. Try signing in instead.";
+  if (code === "email_address_invalid" || /invalid.*email/i.test(msg)) return "That email address isn't valid.";
+  if (code === "invalid_credentials" || /invalid login credentials/i.test(msg))
+    return "Email or password is incorrect.";
+  if (code === "email_not_confirmed" || /not confirmed/i.test(msg))
+    return "Please confirm your email first — check your inbox for the verification link.";
+  if (code === "over_email_send_rate_limit" || err.status === 429)
+    return "Too many attempts. Please wait a minute and try again.";
+  if (code === "signup_disabled") return "New sign-ups are currently disabled.";
+  if (/database error/i.test(msg))
+    return "We couldn't finish creating your account (server error). Please try again in a moment.";
+  if (/failed to fetch|network/i.test(msg)) return "Network problem — check your connection and try again.";
+  return msg || "Something went wrong. Please try again.";
+}
+
 
 function AuthPage() {
   const navigate = useNavigate();
