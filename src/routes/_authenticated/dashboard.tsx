@@ -106,15 +106,28 @@ function Dashboard() {
         })()}
       </div>
 
+      {profile && !(profile.phone && profile.address && profile.lat != null && profile.lng != null) && (
+        <Card className="mt-6">
+          <CardHeader><CardTitle className="text-base">Finish setting up your profile</CardTitle></CardHeader>
+          <CardContent className="text-sm text-muted-foreground">
+            {isNgo
+              ? "Add your organisation name, contact number and operating address — we use your location to match you with the nearest donations."
+              : "Add your contact number and address so NGOs can coordinate pickups with you."}
+            <div className="mt-3"><Button asChild size="sm"><Link to="/onboarding">Complete profile</Link></Button></div>
+          </CardContent>
+        </Card>
+      )}
+
       {isNgo && !profile?.ngo_verified && (
         <Card className="mt-6 border-yellow-500/40 bg-yellow-500/5">
           <CardHeader><CardTitle className="text-base">Your NGO is awaiting verification</CardTitle></CardHeader>
           <CardContent className="text-sm text-muted-foreground">
-            Once an admin verifies your NGO, you'll be able to view and accept donations. Make sure your profile is complete.
-            <div className="mt-3"><Button asChild size="sm" variant="outline"><Link to="/profile">Complete profile</Link></Button></div>
+            Once an admin verifies your NGO, you'll be able to view and accept donations. A complete profile speeds up review.
+            <div className="mt-3"><Button asChild size="sm" variant="outline"><Link to="/onboarding">Complete profile</Link></Button></div>
           </CardContent>
         </Card>
       )}
+
     </div>
   );
 }
