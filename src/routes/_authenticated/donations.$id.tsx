@@ -23,10 +23,17 @@ function DonationDetail() {
   const isNgo = roles.includes("ngo");
   const isAdmin = roles.includes("admin");
 
+  const { data: myProfile } = useQuery({
+    queryKey: ["profile", user?.id],
+    queryFn: async () => (await supabase.from("profiles").select("ngo_verified,phone,address").eq("id", user!.id).single()).data,
+    enabled: !!user,
+  });
+
   const { data: donation, refetch } = useQuery({
     queryKey: ["donation", id],
     queryFn: async () => (await supabase.from("donations").select("*").eq("id", id).single()).data,
   });
+
 
   const { data: donorProfile } = useQuery({
     queryKey: ["profile", donation?.donor_id],
@@ -62,7 +69,10 @@ function DonationDetail() {
 
   const isMyDonation = donation.donor_id === user?.id;
   const isAcceptedByMe = donation.accepted_by_ngo_id === user?.id;
-  const canAccept = isNgo && donation.status === "pending";
+  const isVerifiedNgo = isNgo && !!myProfile?.ngo_verified;
+  const profileComplete = !!myProfile?.phone && !!myProfile?.address;
+  const canAccept = isVerifiedNgo && donation.status === "pending";
+  const blockedFromAccepting = isNgo && !isVerifiedNgo && donation.status === "pending";
 
   async function updateStatus(status: "accepted" | "picked_up" | "delivered" | "cancelled") {
     if (!user) return;
@@ -74,9 +84,19 @@ function DonationDetail() {
       ...(status === "delivered" ? { delivered_at: now } : {}),
     };
     const { error } = await supabase.from("donations").update(patch).eq("id", id);
-    if (error) toast.error(error.message);
-    else toast.success(`Marked as ${donationStatusLabel(status)}`);
+    if (error) {
+      toast.error(
+        /row-level security/i.test(error.message)
+          ? status === "accepted"
+            ? "You can't accept this donation — your NGO needs admin verification, or it was just taken by another NGO."
+            : "You don't have permission to update this donation."
+          : error.message,
+      );
+      return;
+    }
+    toast.success(`Marked as ${donationStatusLabel(status)}`);
   }
+
 
   const stages: { key: string; label: string; ts: string | null }[] = [
     { key: "pending", label: "Posted", ts: donation.created_at },
@@ -165,8 +185,23 @@ function DonationDetail() {
             </>
           )}
 
+          {blockedFromAccepting && (
+            <div className="mt-6 rounded-md border border-yellow-500/40 bg-yellow-500/5 p-3 text-sm">
+              Your NGO is awaiting admin verification, so you can't accept donations yet.
+              {!profileComplete && (
+                <> Completing your profile helps admins verify you faster — <Link to="/onboarding" className="underline">finish it now</Link>.</>
+              )}
+            </div>
+          )}
+          {canAccept && !profileComplete && (
+            <div className="mt-6 rounded-md border p-3 text-sm text-muted-foreground">
+              Add a contact phone and address on your <Link to="/onboarding" className="underline">profile</Link> so donors can reach you.
+            </div>
+          )}
+
           <div className="mt-6 flex flex-wrap gap-2">
             {canAccept && <Button onClick={() => updateStatus("accepted")}>Accept donation</Button>}
+
             {isAcceptedByMe && donation.status === "accepted" && <Button onClick={() => updateStatus("picked_up")}>Mark picked up</Button>}
             {isAcceptedByMe && donation.status === "picked_up" && <Button onClick={() => updateStatus("delivered")}>Mark delivered</Button>}
             {isMyDonation && donation.status === "pending" && (
