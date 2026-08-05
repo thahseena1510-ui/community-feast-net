@@ -137,28 +137,8 @@ function Admin() {
       </section>
 
       {/* NGOs */}
-      <section>
-        <h2 className="mb-3 text-lg font-medium">NGOs</h2>
-        <div className="space-y-2">
-          {ngos?.map((n) => (
-            <Card key={n.id}>
-              <CardContent className="flex items-center justify-between gap-3 p-4">
-                <div className="min-w-0">
-                  <div className="truncate font-medium">{n.ngo_name}</div>
-                  <div className="truncate text-sm text-muted-foreground">{n.full_name} · {n.phone ?? "no phone"}</div>
-                </div>
-                <div className="flex flex-shrink-0 items-center gap-2">
-                  <Badge variant={n.ngo_verified ? "default" : "outline"}>{n.ngo_verified ? "Verified" : "Pending"}</Badge>
-                  <Button size="sm" variant={n.ngo_verified ? "outline" : "default"} onClick={() => setVerified(n.id, !n.ngo_verified)}>
-                    {n.ngo_verified ? "Revoke" : "Verify"}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-          {ngos?.length === 0 && <p className="text-sm text-muted-foreground">No NGOs yet.</p>}
-        </div>
-      </section>
+      <NgoReview />
+
 
       {/* Recent donations */}
       <section>
