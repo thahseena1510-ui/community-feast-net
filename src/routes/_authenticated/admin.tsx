@@ -1,6 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
@@ -25,7 +24,6 @@ const STATUS_COLORS: Record<string, string> = {
 
 function Admin() {
   const { roles } = useAuth();
-  const qc = useQueryClient();
   const isAdmin = roles.includes("admin");
 
   const { data: stats } = useQuery({

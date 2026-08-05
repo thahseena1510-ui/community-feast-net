@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,7 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
 
 function Dashboard() {
   const { user, roles } = useAuth();
+  const qc = useQueryClient();
   const isNgo = roles.includes("ngo");
   const isAdmin = roles.includes("admin");
   const isDonor = roles.includes("donor");
@@ -25,6 +27,25 @@ function Dashboard() {
     },
     enabled: !!user,
   });
+
+  // Live-refresh when an admin changes this account's verification status.
+  useEffect(() => {
+    if (!user) return;
+    const channel = supabase
+      .channel(`profile-${user.id}`)
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "profiles", filter: `id=eq.${user.id}` },
+        () => {
+          qc.invalidateQueries({ queryKey: ["profile", user.id] });
+          qc.invalidateQueries({ queryKey: ["dash-stats"] });
+        },
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, qc]);
 
   const { data: stats } = useQuery({
     queryKey: ["dash-stats", user?.id, roles.join(",")],
@@ -114,6 +135,16 @@ function Dashboard() {
               ? "Add your organisation name, contact number and operating address — we use your location to match you with the nearest donations."
               : "Add your contact number and address so NGOs can coordinate pickups with you."}
             <div className="mt-3"><Button asChild size="sm"><Link to="/onboarding">Complete profile</Link></Button></div>
+          </CardContent>
+        </Card>
+      )}
+
+      {isNgo && profile?.ngo_verified && (
+        <Card className="mt-6 border-primary/40 bg-primary/5">
+          <CardHeader><CardTitle className="text-base">Your NGO is verified</CardTitle></CardHeader>
+          <CardContent className="text-sm text-muted-foreground">
+            You can browse available donations near you and accept pickups.
+            <div className="mt-3"><Button asChild size="sm"><Link to="/donations">Browse donations</Link></Button></div>
           </CardContent>
         </Card>
       )}
