@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { donationStatusLabel } from "@/lib/distance";
+import { NgoReview } from "@/components/NgoReview";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({ meta: [{ title: "Admin — FoodShare" }] }),
@@ -42,12 +43,6 @@ function Admin() {
   const { data: breakdown } = useQuery({
     queryKey: ["admin-breakdown"],
     queryFn: async () => (await supabase.rpc("get_status_breakdown")).data ?? [],
-    enabled: isAdmin,
-  });
-
-  const { data: ngos } = useQuery({
-    queryKey: ["admin-ngos"],
-    queryFn: async () => (await supabase.from("profiles").select("id,full_name,ngo_name,ngo_verified,phone,address").not("ngo_name", "is", null).order("ngo_verified", { ascending: true })).data ?? [],
     enabled: isAdmin,
   });
 
