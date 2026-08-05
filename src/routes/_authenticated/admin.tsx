@@ -56,14 +56,8 @@ function Admin() {
     return <div className="mx-auto max-w-3xl px-4 py-8 text-sm text-muted-foreground">Admin access required.</div>;
   }
 
-  async function setVerified(id: string, value: boolean) {
-    const { error } = await supabase.from("profiles").update({ ngo_verified: value }).eq("id", id);
-    if (error) toast.error(error.message);
-    else {
-      toast.success(value ? "NGO verified" : "Verification revoked");
-      qc.invalidateQueries({ queryKey: ["admin-ngos"] });
-    }
-  }
+
+
 
   const trendData = (trends ?? []).map((t) => ({
     day: new Date(t.day).toLocaleDateString(undefined, { month: "short", day: "numeric" }),
