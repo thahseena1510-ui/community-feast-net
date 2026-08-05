@@ -1,6 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { toast } from "sonner";
+import { useQuery } from "@tanstack/react-query";
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from "recharts";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth-context";
@@ -8,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { donationStatusLabel } from "@/lib/distance";
+import { NgoReview } from "@/components/NgoReview";
 
 export const Route = createFileRoute("/_authenticated/admin")({
   head: () => ({ meta: [{ title: "Admin — FoodShare" }] }),
@@ -24,7 +24,6 @@ const STATUS_COLORS: Record<string, string> = {
 
 function Admin() {
   const { roles } = useAuth();
-  const qc = useQueryClient();
   const isAdmin = roles.includes("admin");
 
   const { data: stats } = useQuery({
@@ -45,12 +44,6 @@ function Admin() {
     enabled: isAdmin,
   });
 
-  const { data: ngos } = useQuery({
-    queryKey: ["admin-ngos"],
-    queryFn: async () => (await supabase.from("profiles").select("id,full_name,ngo_name,ngo_verified,phone,address").not("ngo_name", "is", null).order("ngo_verified", { ascending: true })).data ?? [],
-    enabled: isAdmin,
-  });
-
   const { data: donations } = useQuery({
     queryKey: ["admin-donations"],
     queryFn: async () => (await supabase.from("donations").select("id,food_name,status,created_at,pickup_address").order("created_at", { ascending: false }).limit(20)).data ?? [],
@@ -61,14 +54,8 @@ function Admin() {
     return <div className="mx-auto max-w-3xl px-4 py-8 text-sm text-muted-foreground">Admin access required.</div>;
   }
 
-  async function setVerified(id: string, value: boolean) {
-    const { error } = await supabase.from("profiles").update({ ngo_verified: value }).eq("id", id);
-    if (error) toast.error(error.message);
-    else {
-      toast.success(value ? "NGO verified" : "Verification revoked");
-      qc.invalidateQueries({ queryKey: ["admin-ngos"] });
-    }
-  }
+
+
 
   const trendData = (trends ?? []).map((t) => ({
     day: new Date(t.day).toLocaleDateString(undefined, { month: "short", day: "numeric" }),
@@ -137,28 +124,8 @@ function Admin() {
       </section>
 
       {/* NGOs */}
-      <section>
-        <h2 className="mb-3 text-lg font-medium">NGOs</h2>
-        <div className="space-y-2">
-          {ngos?.map((n) => (
-            <Card key={n.id}>
-              <CardContent className="flex items-center justify-between gap-3 p-4">
-                <div className="min-w-0">
-                  <div className="truncate font-medium">{n.ngo_name}</div>
-                  <div className="truncate text-sm text-muted-foreground">{n.full_name} · {n.phone ?? "no phone"}</div>
-                </div>
-                <div className="flex flex-shrink-0 items-center gap-2">
-                  <Badge variant={n.ngo_verified ? "default" : "outline"}>{n.ngo_verified ? "Verified" : "Pending"}</Badge>
-                  <Button size="sm" variant={n.ngo_verified ? "outline" : "default"} onClick={() => setVerified(n.id, !n.ngo_verified)}>
-                    {n.ngo_verified ? "Revoke" : "Verify"}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-          {ngos?.length === 0 && <p className="text-sm text-muted-foreground">No NGOs yet.</p>}
-        </div>
-      </section>
+      <NgoReview />
+
 
       {/* Recent donations */}
       <section>
