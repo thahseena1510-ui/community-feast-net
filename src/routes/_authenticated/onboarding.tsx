@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AddressAutocomplete } from "@/components/AddressAutocomplete";
+import { NgoDocumentUpload } from "@/components/NgoDocumentUpload";
 
 export const Route = createFileRoute("/_authenticated/onboarding")({
   head: () => ({
