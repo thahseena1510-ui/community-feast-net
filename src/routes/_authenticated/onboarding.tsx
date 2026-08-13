@@ -45,6 +45,11 @@ function OnboardingPage() {
   const [busy, setBusy] = useState(false);
   const [verified, setVerified] = useState(false);
   const [errors, setErrors] = useState<Errors>({});
+  const [doc, setDoc] = useState<{ path: string | null; uploadedAt: string | null; note: string | null }>({
+    path: null,
+    uploadedAt: null,
+    note: null,
+  });
   const [form, setForm] = useState({ full_name: "", ngo_name: "", phone: "", address: "", lat: "", lng: "" });
 
   useEffect(() => {
