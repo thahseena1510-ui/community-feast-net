@@ -123,6 +123,9 @@ export type Database = {
           id: string
           lat: number | null
           lng: number | null
+          ngo_doc_note: string | null
+          ngo_doc_path: string | null
+          ngo_doc_uploaded_at: string | null
           ngo_name: string | null
           ngo_verified: boolean
           phone: string | null
@@ -135,6 +138,9 @@ export type Database = {
           id: string
           lat?: number | null
           lng?: number | null
+          ngo_doc_note?: string | null
+          ngo_doc_path?: string | null
+          ngo_doc_uploaded_at?: string | null
           ngo_name?: string | null
           ngo_verified?: boolean
           phone?: string | null
@@ -147,6 +153,9 @@ export type Database = {
           id?: string
           lat?: number | null
           lng?: number | null
+          ngo_doc_note?: string | null
+          ngo_doc_path?: string | null
+          ngo_doc_uploaded_at?: string | null
           ngo_name?: string | null
           ngo_verified?: boolean
           phone?: string | null
