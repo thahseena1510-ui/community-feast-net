@@ -71,6 +71,11 @@ function OnboardingPage() {
             lng: data.lng?.toString() ?? "",
           });
           setVerified(!!data.ngo_verified);
+          setDoc({
+            path: data.ngo_doc_path ?? null,
+            uploadedAt: data.ngo_doc_uploaded_at ?? null,
+            note: data.ngo_doc_note ?? null,
+          });
         }
         setReady(true);
       });
