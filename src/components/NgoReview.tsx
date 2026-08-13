@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { BadgeCheck, Clock, Loader2, MapPin, Phone, Search } from "lucide-react";
+import { BadgeCheck, Clock, FileText, Loader2, MapPin, Phone, Search } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,6 +19,9 @@ type Ngo = {
   lat: number | null;
   lng: number | null;
   created_at: string;
+  ngo_doc_path: string | null;
+  ngo_doc_uploaded_at: string | null;
+  ngo_doc_note: string | null;
 };
 
 export function NgoReview() {
@@ -30,13 +33,40 @@ export function NgoReview() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("id,full_name,ngo_name,ngo_verified,phone,address,lat,lng,created_at")
+        .select(
+          "id,full_name,ngo_name,ngo_verified,phone,address,lat,lng,created_at,ngo_doc_path,ngo_doc_uploaded_at,ngo_doc_note",
+        )
         .not("ngo_name", "is", null)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as Ngo[];
     },
   });
+
+  async function openDoc(path: string) {
+    const { data, error } = await supabase.storage.from("ngo-documents").createSignedUrl(path, 60);
+    if (error || !data) {
+      toast.error("Could not open this document.");
+      return;
+    }
+    window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+  }
+
+  const rejectDoc = useMutation({
+    mutationFn: async ({ id, note }: { id: string; note: string }) => {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ ngo_verified: false, ngo_doc_note: note })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Document rejected — the NGO can upload a new one.");
+      qc.invalidateQueries({ queryKey: ["admin-ngos"] });
+    },
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Could not reject the document."),
+  });
+
 
   const setVerified = useMutation({
     mutationFn: async ({ id, value }: { id: string; value: boolean }) => {
@@ -80,6 +110,10 @@ export function NgoReview() {
                 {n.ngo_verified ? "Verified" : "Pending"}
               </Badge>
               {!complete && <Badge variant="secondary">Incomplete profile</Badge>}
+              <Badge variant={n.ngo_doc_path ? "outline" : "destructive"} className="gap-1">
+                <FileText className="h-3 w-3" />
+                {n.ngo_doc_path ? "Document uploaded" : "No document"}
+              </Badge>
             </div>
             <div className="truncate text-sm text-muted-foreground">
               {n.full_name ?? "No contact name"} · registered{" "}
@@ -95,16 +129,43 @@ export function NgoReview() {
                 <span className="truncate">{n.address ?? "No address"}</span>
               </span>
             </div>
+            {n.ngo_doc_path && (
+              <p className="text-xs text-muted-foreground">
+                Document submitted{" "}
+                {n.ngo_doc_uploaded_at ? new Date(n.ngo_doc_uploaded_at).toLocaleString() : "recently"}
+              </p>
+            )}
+            {n.ngo_doc_note && <p className="text-xs text-destructive">Rejected: {n.ngo_doc_note}</p>}
           </div>
-          <Button
-            size="sm"
-            variant={n.ngo_verified ? "outline" : "default"}
-            disabled={busy}
-            onClick={() => setVerified.mutate({ id: n.id, value: !n.ngo_verified })}
-          >
-            {busy && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
-            {n.ngo_verified ? "Unverify" : "Verify"}
-          </Button>
+          <div className="flex flex-shrink-0 flex-wrap items-center gap-2">
+            {n.ngo_doc_path && (
+              <Button size="sm" variant="secondary" onClick={() => openDoc(n.ngo_doc_path!)}>
+                View document
+              </Button>
+            )}
+            {n.ngo_doc_path && !n.ngo_verified && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  const note = window.prompt("Why is this document rejected? The NGO will see this note.");
+                  if (note && note.trim()) rejectDoc.mutate({ id: n.id, note: note.trim().slice(0, 300) });
+                }}
+              >
+                Reject
+              </Button>
+            )}
+            <Button
+              size="sm"
+              variant={n.ngo_verified ? "outline" : "default"}
+              disabled={busy || (!n.ngo_verified && !n.ngo_doc_path)}
+              title={!n.ngo_verified && !n.ngo_doc_path ? "This NGO has not uploaded a registration document yet" : undefined}
+              onClick={() => setVerified.mutate({ id: n.id, value: !n.ngo_verified })}
+            >
+              {busy && <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />}
+              {n.ngo_verified ? "Unverify" : "Verify"}
+            </Button>
+          </div>
         </CardContent>
       </Card>
     );

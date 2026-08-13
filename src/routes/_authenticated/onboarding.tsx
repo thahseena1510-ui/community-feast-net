@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AddressAutocomplete } from "@/components/AddressAutocomplete";
+import { NgoDocumentUpload } from "@/components/NgoDocumentUpload";
 
 export const Route = createFileRoute("/_authenticated/onboarding")({
   head: () => ({
@@ -45,6 +46,11 @@ function OnboardingPage() {
   const [busy, setBusy] = useState(false);
   const [verified, setVerified] = useState(false);
   const [errors, setErrors] = useState<Errors>({});
+  const [doc, setDoc] = useState<{ path: string | null; uploadedAt: string | null; note: string | null }>({
+    path: null,
+    uploadedAt: null,
+    note: null,
+  });
   const [form, setForm] = useState({ full_name: "", ngo_name: "", phone: "", address: "", lat: "", lng: "" });
 
   useEffect(() => {
@@ -66,6 +72,11 @@ function OnboardingPage() {
             lng: data.lng?.toString() ?? "",
           });
           setVerified(!!data.ngo_verified);
+          setDoc({
+            path: data.ngo_doc_path ?? null,
+            uploadedAt: data.ngo_doc_uploaded_at ?? null,
+            note: data.ngo_doc_note ?? null,
+          });
         }
         setReady(true);
       });
@@ -197,6 +208,18 @@ function OnboardingPage() {
             </p>
           )}
         </Field>
+
+        {isNgo && user && (
+          <NgoDocumentUpload
+            userId={user.id}
+            path={doc.path}
+            uploadedAt={doc.uploadedAt}
+            note={doc.note}
+            onUploaded={(p) => setDoc({ path: p, uploadedAt: new Date().toISOString(), note: null })}
+          />
+        )}
+
+
 
         <div className="flex gap-2">
           <Button type="submit" disabled={busy}>{busy ? "Saving…" : "Save and continue"}</Button>
