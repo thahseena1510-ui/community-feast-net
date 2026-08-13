@@ -151,10 +151,23 @@ function Dashboard() {
 
       {isNgo && !profile?.ngo_verified && (
         <Card className="mt-6 border-yellow-500/40 bg-yellow-500/5">
-          <CardHeader><CardTitle className="text-base">Your NGO is awaiting verification</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle className="text-base">
+              {profile?.ngo_doc_path ? "Your NGO is awaiting verification" : "Upload your registration document"}
+            </CardTitle>
+          </CardHeader>
           <CardContent className="text-sm text-muted-foreground">
-            Once an admin verifies your NGO, you'll be able to view and accept donations. A complete profile speeds up review.
-            <div className="mt-3"><Button asChild size="sm" variant="outline"><Link to="/onboarding">Complete profile</Link></Button></div>
+            {profile?.ngo_doc_path
+              ? "An admin is reviewing your government registration document. You'll be notified as soon as you're verified."
+              : "Admins can only verify your NGO after you upload a government-issued registration document (12A/80G, Societies Act, Trust deed or equivalent)."}
+            {profile?.ngo_doc_note && (
+              <p className="mt-2 text-destructive">Admin note: {profile.ngo_doc_note}</p>
+            )}
+            <div className="mt-3">
+              <Button asChild size="sm" variant={profile?.ngo_doc_path ? "outline" : "default"}>
+                <Link to="/onboarding">{profile?.ngo_doc_path ? "Complete profile" : "Upload document"}</Link>
+              </Button>
+            </div>
           </CardContent>
         </Card>
       )}
