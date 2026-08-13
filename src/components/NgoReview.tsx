@@ -19,6 +19,9 @@ type Ngo = {
   lat: number | null;
   lng: number | null;
   created_at: string;
+  ngo_doc_path: string | null;
+  ngo_doc_uploaded_at: string | null;
+  ngo_doc_note: string | null;
 };
 
 export function NgoReview() {
@@ -30,13 +33,40 @@ export function NgoReview() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("profiles")
-        .select("id,full_name,ngo_name,ngo_verified,phone,address,lat,lng,created_at")
+        .select(
+          "id,full_name,ngo_name,ngo_verified,phone,address,lat,lng,created_at,ngo_doc_path,ngo_doc_uploaded_at,ngo_doc_note",
+        )
         .not("ngo_name", "is", null)
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data ?? []) as Ngo[];
     },
   });
+
+  async function openDoc(path: string) {
+    const { data, error } = await supabase.storage.from("ngo-documents").createSignedUrl(path, 60);
+    if (error || !data) {
+      toast.error("Could not open this document.");
+      return;
+    }
+    window.open(data.signedUrl, "_blank", "noopener,noreferrer");
+  }
+
+  const rejectDoc = useMutation({
+    mutationFn: async ({ id, note }: { id: string; note: string }) => {
+      const { error } = await supabase
+        .from("profiles")
+        .update({ ngo_verified: false, ngo_doc_note: note })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      toast.success("Document rejected — the NGO can upload a new one.");
+      qc.invalidateQueries({ queryKey: ["admin-ngos"] });
+    },
+    onError: (e: unknown) => toast.error(e instanceof Error ? e.message : "Could not reject the document."),
+  });
+
 
   const setVerified = useMutation({
     mutationFn: async ({ id, value }: { id: string; value: boolean }) => {
