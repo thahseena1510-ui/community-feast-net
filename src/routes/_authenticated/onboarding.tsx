@@ -208,6 +208,18 @@ function OnboardingPage() {
           )}
         </Field>
 
+        {isNgo && user && (
+          <NgoDocumentUpload
+            userId={user.id}
+            path={doc.path}
+            uploadedAt={doc.uploadedAt}
+            note={doc.note}
+            onUploaded={(p) => setDoc({ path: p, uploadedAt: new Date().toISOString(), note: null })}
+          />
+        )}
+
+
+
         <div className="flex gap-2">
           <Button type="submit" disabled={busy}>{busy ? "Saving…" : "Save and continue"}</Button>
           <Button type="button" variant="ghost" onClick={() => navigate({ to: "/dashboard" })}>Skip for now</Button>
