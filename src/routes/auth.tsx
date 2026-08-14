@@ -12,7 +12,16 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 export const Route = createFileRoute("/auth")({
-  head: () => ({ meta: [{ title: "Sign in — FoodShare" }] }),
+  head: () => ({
+    meta: [
+      { title: "Sign in or create an account — FoodShare" },
+      { name: "description", content: "Sign in to FoodShare or create a donor or NGO account." },
+      { property: "og:title", content: "Sign in or create an account — FoodShare" },
+      { property: "og:description", content: "Join FoodShare as a food donor or NGO." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: AuthPage,
 });
 
@@ -83,7 +92,7 @@ function GoogleButton() {
       disabled={busy}
       onClick={async () => {
         setBusy(true);
-        const r = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin + "/dashboard" });
+        const r = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin + "/auth" });
         if (r.error) {
           toast.error("Google sign-in failed");
           setBusy(false);
@@ -189,29 +198,44 @@ function SignUpForm() {
           toast.error("Please fix the highlighted fields");
           return;
         }
+        if (!em.success || !pw.success) return;
         setBusy(true);
-        const { data, error } = await supabase.auth.signUp({
-          email: em.data!,
-          password: pw.data!,
-          options: {
-            emailRedirectTo: window.location.origin + "/onboarding",
-            data: { full_name: fullName.trim(), role, ngo_name: role === "ngo" ? ngoName.trim() : null },
-          },
-        });
-        setBusy(false);
-        if (error) {
-          const message = authErrorMessage(error);
+        try {
+          const { data, error } = await supabase.auth.signUp({
+            email: em.data,
+            password: pw.data,
+            options: {
+              emailRedirectTo: window.location.origin + "/auth",
+              data: { full_name: fullName.trim(), role, ngo_name: role === "ngo" ? ngoName.trim() : null },
+            },
+          });
+          if (error) {
+            const message = authErrorMessage(error);
+            setErrors({ form: message });
+            toast.error(message);
+            return;
+          }
+          if (!data.user) {
+            const message = "Your account could not be created. Please try again.";
+            setErrors({ form: message });
+            toast.error(message);
+            return;
+          }
+          // No session means email confirmation is required.
+          if (!data.session) {
+            setCheckEmail(true);
+            toast.success("Account created — check your email to confirm.");
+            return;
+          }
+          toast.success(role === "ngo" ? "Account created. Complete your profile so an admin can verify your NGO." : "Account created!");
+          navigate({ to: "/onboarding" });
+        } catch {
+          const message = "We couldn't reach the registration service. Check your connection and try again.";
           setErrors({ form: message });
-          return toast.error(message);
+          toast.error(message);
+        } finally {
+          setBusy(false);
         }
-        // No session means email confirmation is required.
-        if (!data.session) {
-          setCheckEmail(true);
-          toast.success("Account created — check your email to confirm.");
-          return;
-        }
-        toast.success(role === "ngo" ? "Account created. Complete your profile so an admin can verify your NGO." : "Account created!");
-        navigate({ to: "/onboarding" });
       }}
     >
       {errors.form && (
