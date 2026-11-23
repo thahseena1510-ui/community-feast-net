@@ -10,7 +10,16 @@ import { donationStatusLabel } from "@/lib/distance";
 import { NgoReview } from "@/components/NgoReview";
 
 export const Route = createFileRoute("/_authenticated/admin")({
-  head: () => ({ meta: [{ title: "Admin — FoodShare" }] }),
+  head: () => ({
+    meta: [
+      { title: "Admin — FoodShare" },
+      { name: "description", content: "Review NGO verification requests and oversee FoodShare donation activity." },
+      { property: "og:title", content: "Admin dashboard — FoodShare" },
+      { property: "og:description", content: "Review NGO verification requests and oversee FoodShare donation activity." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: Admin,
 });
 

@@ -7,7 +7,16 @@ import { useAuth } from "@/lib/auth-context";
 import { Card, CardContent } from "@/components/ui/card";
 
 export const Route = createFileRoute("/_authenticated/notifications")({
-  head: () => ({ meta: [{ title: "Notifications — FoodShare" }] }),
+  head: () => ({
+    meta: [
+      { title: "Notifications — FoodShare" },
+      { name: "description", content: "See updates about FoodShare donations, NGO matches, and pickup progress." },
+      { property: "og:title", content: "FoodShare notifications" },
+      { property: "og:description", content: "See updates about FoodShare donations, NGO matches, and pickup progress." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: NotificationsPage,
 });
 

@@ -16,7 +16,16 @@ import { AddressAutocomplete } from "@/components/AddressAutocomplete";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/donations/new")({
-  head: () => ({ meta: [{ title: "Post donation — FoodShare" }] }),
+  head: () => ({
+    meta: [
+      { title: "Post donation — FoodShare" },
+      { name: "description", content: "Share surplus food with a nearby NGO by posting its name, quantity, pickup location, and date." },
+      { property: "og:title", content: "Post a food donation — FoodShare" },
+      { property: "og:description", content: "Share surplus food with a nearby NGO by posting its name, quantity, pickup location, and date." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: NewDonation,
 });
 

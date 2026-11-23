@@ -10,7 +10,16 @@ import { Button } from "@/components/ui/button";
 import { donationStatusLabel, formatKm, haversineKm } from "@/lib/distance";
 
 export const Route = createFileRoute("/_authenticated/donations/")({
-  head: () => ({ meta: [{ title: "Donations — FoodShare" }] }),
+  head: () => ({
+    meta: [
+      { title: "Donations — FoodShare" },
+      { name: "description", content: "Browse surplus food donations, pickup details, and status updates on FoodShare." },
+      { property: "og:title", content: "Food donations — FoodShare" },
+      { property: "og:description", content: "Browse surplus food donations, pickup details, and status updates on FoodShare." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: DonationsList,
 });
 

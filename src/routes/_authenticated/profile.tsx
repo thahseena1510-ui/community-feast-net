@@ -9,7 +9,16 @@ import { Label } from "@/components/ui/label";
 import { AddressAutocomplete } from "@/components/AddressAutocomplete";
 
 export const Route = createFileRoute("/_authenticated/profile")({
-  head: () => ({ meta: [{ title: "Profile — FoodShare" }] }),
+  head: () => ({
+    meta: [
+      { title: "Profile — FoodShare" },
+      { name: "description", content: "Update your FoodShare name, contact details, and pickup address." },
+      { property: "og:title", content: "Your FoodShare profile" },
+      { property: "og:description", content: "Update your FoodShare name, contact details, and pickup address." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: ProfilePage,
 });
 

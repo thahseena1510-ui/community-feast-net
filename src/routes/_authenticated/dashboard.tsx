@@ -8,7 +8,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
-  head: () => ({ meta: [{ title: "Dashboard — FoodShare" }] }),
+  head: () => ({
+    meta: [
+      { title: "Dashboard — FoodShare" },
+      { name: "description", content: "Track your food donations, pickups, and delivery progress on FoodShare." },
+      { property: "og:title", content: "FoodShare dashboard" },
+      { property: "og:description", content: "Track your food donations, pickups, and delivery progress on FoodShare." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: Dashboard,
 });
 

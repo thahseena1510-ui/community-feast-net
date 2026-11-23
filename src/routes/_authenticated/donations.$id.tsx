@@ -12,7 +12,16 @@ import { donationStatusLabel } from "@/lib/distance";
 import { PickupMap } from "@/components/PickupMap";
 
 export const Route = createFileRoute("/_authenticated/donations/$id")({
-  head: () => ({ meta: [{ title: "Donation — FoodShare" }] }),
+  head: () => ({
+    meta: [
+      { title: "Donation details — FoodShare" },
+      { name: "description", content: "View pickup details, location, and progress for a food donation shared through FoodShare." },
+      { property: "og:title", content: "Donation details — FoodShare" },
+      { property: "og:description", content: "View pickup details, location, and progress for a food donation shared through FoodShare." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
+    ],
+  }),
   component: DonationDetail,
 });
 

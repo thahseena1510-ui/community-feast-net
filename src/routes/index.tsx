@@ -11,6 +11,8 @@ export const Route = createFileRoute("/")({
       { name: "description", content: "Post your extra food. NGOs nearby get notified instantly. Together, we cut food waste and feed more people." },
       { property: "og:title", content: "FoodShare — Share surplus food with NGOs" },
       { property: "og:description", content: "Post your extra food. NGOs nearby get notified instantly. Together, we cut food waste and feed more people." },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary" },
     ],
   }),
   component: Landing,

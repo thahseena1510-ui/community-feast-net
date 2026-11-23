@@ -59,6 +59,8 @@ function authErrorMessage(err: { message: string; code?: string; status?: number
 function AuthPage() {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
+  const [activeTab, setActiveTab] = useState("signin");
+  const [signInEmail, setSignInEmail] = useState("");
 
   useEffect(() => {
     if (!loading && user) navigate({ to: "/dashboard" });
@@ -70,13 +72,20 @@ function AuthPage() {
         <h1 className="text-2xl font-semibold">Welcome to FoodShare</h1>
         <p className="mt-1 text-sm text-muted-foreground">Sign in or create an account to continue.</p>
       </div>
-      <Tabs defaultValue="signin">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid grid-cols-2">
           <TabsTrigger value="signin">Sign in</TabsTrigger>
           <TabsTrigger value="signup">Create account</TabsTrigger>
         </TabsList>
-        <TabsContent value="signin"><SignInForm /></TabsContent>
-        <TabsContent value="signup"><SignUpForm /></TabsContent>
+        <TabsContent value="signin">
+          <SignInForm initialEmail={signInEmail} onEmailChange={setSignInEmail} />
+        </TabsContent>
+        <TabsContent value="signup">
+          <SignUpForm onExistingAccount={(email) => {
+            setSignInEmail(email);
+            setActiveTab("signin");
+          }} />
+        </TabsContent>
       </Tabs>
     </div>
   );
@@ -108,12 +117,19 @@ function FieldError({ msg }: { msg?: string }) {
   return msg ? <p className="mt-1 text-xs text-destructive">{msg}</p> : null;
 }
 
-function SignInForm() {
+function SignInForm({
+  initialEmail,
+  onEmailChange,
+}: {
+  initialEmail: string;
+  onEmailChange: (email: string) => void;
+}) {
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(initialEmail);
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<{ email?: string; password?: string; form?: string }>({});
   const [busy, setBusy] = useState(false);
+  useEffect(() => setEmail(initialEmail), [initialEmail]);
   return (
     <form
       className="mt-4 space-y-4"
@@ -142,7 +158,10 @@ function SignInForm() {
       )}
       <div>
         <Label htmlFor="si-email">Email</Label>
-        <Input id="si-email" type="email" autoComplete="email" value={email} onChange={(e) => setEmail(e.target.value)} aria-invalid={!!errors.email} />
+        <Input id="si-email" type="email" autoComplete="email" value={email} onChange={(e) => {
+          setEmail(e.target.value);
+          onEmailChange(e.target.value);
+        }} aria-invalid={!!errors.email} />
         <FieldError msg={errors.email} />
       </div>
       <div>
@@ -157,7 +176,7 @@ function SignInForm() {
   );
 }
 
-function SignUpForm() {
+function SignUpForm({ onExistingAccount }: { onExistingAccount: (email: string) => void }) {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -165,7 +184,7 @@ function SignUpForm() {
   const [ngoName, setNgoName] = useState("");
   const [role, setRole] = useState<"donor" | "ngo">("donor");
   const [busy, setBusy] = useState(false);
-  const [errors, setErrors] = useState<{ email?: string; password?: string; fullName?: string; ngoName?: string; form?: string }>({});
+  const [errors, setErrors] = useState<{ email?: string; password?: string; fullName?: string; ngoName?: string; form?: string; alreadyExists?: boolean }>({});
   const [checkEmail, setCheckEmail] = useState(false);
 
   if (checkEmail) {
@@ -211,7 +230,8 @@ function SignUpForm() {
           });
           if (error) {
             const message = authErrorMessage(error);
-            setErrors({ form: message });
+            const alreadyExists = error.code === "user_already_exists" || /already registered|already exists/i.test(error.message);
+            setErrors({ form: message, ...(alreadyExists ? { alreadyExists: true } : {}) });
             toast.error(message);
             return;
           }
@@ -239,7 +259,19 @@ function SignUpForm() {
       }}
     >
       {errors.form && (
-        <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">{errors.form}</div>
+        <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">
+          <p>{errors.form}</p>
+          {errors.alreadyExists && (
+            <Button
+              type="button"
+              variant="link"
+              className="mt-2 h-auto p-0 text-destructive underline"
+              onClick={() => onExistingAccount(email.trim())}
+            >
+              Sign in with this email instead
+            </Button>
+          )}
+        </div>
       )}
       <div>
         <Label>I am a…</Label>
