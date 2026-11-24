@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1795506090535,
+      "tag": "0000_mirror_ngo_signup_records",
+      "breakpoints": true
+    }
+  ]
+}

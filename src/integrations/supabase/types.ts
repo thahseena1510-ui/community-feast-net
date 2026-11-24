@@ -74,6 +74,69 @@ export type Database = {
         }
         Relationships: []
       }
+      ngos: {
+        Row: {
+          address: string | null
+          contact_name: string | null
+          created_at: string
+          lat: number | null
+          lng: number | null
+          ngo_doc_note: string | null
+          ngo_doc_path: string | null
+          ngo_doc_uploaded_at: string | null
+          ngo_name: string
+          ngo_verified: boolean
+          phone: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address?: string | null
+          contact_name?: string | null
+          created_at?: string
+          lat?: number | null
+          lng?: number | null
+          ngo_doc_note?: string | null
+          ngo_doc_path?: string | null
+          ngo_doc_uploaded_at?: string | null
+          ngo_name: string
+          ngo_verified?: boolean
+          phone?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string | null
+          contact_name?: string | null
+          created_at?: string
+          lat?: number | null
+          lng?: number | null
+          ngo_doc_note?: string | null
+          ngo_doc_path?: string | null
+          ngo_doc_uploaded_at?: string | null
+          ngo_name?: string
+          ngo_verified?: boolean
+          phone?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ngos_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "ngo_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ngos_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           body: string | null

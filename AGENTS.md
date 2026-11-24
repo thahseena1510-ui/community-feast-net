@@ -8,3 +8,5 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+- NGO organization details are mirrored from `profiles` into `public.ngos` by a database trigger, so existing profile-based screens remain consistent while the dedicated NGO record stays current.

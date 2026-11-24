@@ -5,6 +5,7 @@ import { z } from "zod";
 import { supabase } from "@/integrations/supabase/client";
 import { lovable } from "@/integrations/lovable";
 import { useAuth } from "@/lib/auth-context";
+import { passwordSchema } from "@/lib/password-validation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -26,19 +27,41 @@ export const Route = createFileRoute("/auth")({
 });
 
 const emailSchema = z.string().trim().email("Enter a valid email address").max(255);
-const passwordSchema = z
-  .string()
-  .min(8, "Password must be at least 8 characters")
-  .max(72, "Password must be 72 characters or fewer")
-  .regex(/[A-Za-z]/, "Password must include a letter")
-  .regex(/\d/, "Password must include a number");
+
+type AuthErrorDetails = {
+  message: string;
+  code?: string;
+  status?: number;
+  details?: string;
+  hint?: string;
+  weak_password?: { reasons?: string[] };
+};
+
+function authErrorDetails(error: unknown): AuthErrorDetails {
+  if (typeof error === "object" && error !== null) {
+    const candidate = error as Partial<AuthErrorDetails>;
+    return {
+      message: typeof candidate.message === "string" ? candidate.message : "Unknown authentication error",
+      ...(typeof candidate.code === "string" ? { code: candidate.code } : {}),
+      ...(typeof candidate.status === "number" ? { status: candidate.status } : {}),
+      ...(typeof candidate.details === "string" ? { details: candidate.details } : {}),
+      ...(typeof candidate.hint === "string" ? { hint: candidate.hint } : {}),
+      ...(candidate.weak_password ? { weak_password: candidate.weak_password } : {}),
+    };
+  }
+  return { message: error instanceof Error ? error.message : String(error) };
+}
+
+function logAuthError(action: string, error: unknown) {
+  console.error(`[FoodShare auth] ${action}`, authErrorDetails(error));
+}
 
 // Turns backend auth failures into something a person can act on.
-function authErrorMessage(err: { message: string; code?: string; status?: number }) {
+function authErrorMessage(err: AuthErrorDetails) {
   const code = err.code ?? "";
   const msg = err.message ?? "";
-  if (code === "weak_password" || /known to be weak/i.test(msg))
-    return "That password appears in known data breaches. Please choose a stronger, unique one.";
+  if (code === "weak_password" || /known to be weak|pwned|breach/i.test(msg))
+    return "This password was found in known data breaches. Choose a different, unique password.";
   if (code === "user_already_exists" || /already registered/i.test(msg))
     return "An account with this email already exists. Try signing in instead.";
   if (code === "email_address_invalid" || /invalid.*email/i.test(msg)) return "That email address isn't valid.";
@@ -61,6 +84,7 @@ function AuthPage() {
   const { user, loading } = useAuth();
   const [activeTab, setActiveTab] = useState("signin");
   const [signInEmail, setSignInEmail] = useState("");
+  const [registrationNotice, setRegistrationNotice] = useState<string | null>(null);
 
   useEffect(() => {
     if (!loading && user) navigate({ to: "/dashboard" });
@@ -78,13 +102,23 @@ function AuthPage() {
           <TabsTrigger value="signup">Create account</TabsTrigger>
         </TabsList>
         <TabsContent value="signin">
-          <SignInForm initialEmail={signInEmail} onEmailChange={setSignInEmail} />
+          <SignInForm initialEmail={signInEmail} onEmailChange={setSignInEmail} registrationNotice={registrationNotice} />
         </TabsContent>
         <TabsContent value="signup">
-          <SignUpForm onExistingAccount={(email) => {
-            setSignInEmail(email);
-            setActiveTab("signin");
-          }} />
+          <SignUpForm
+            onExistingAccount={(email) => {
+              setRegistrationNotice(null);
+              setSignInEmail(email);
+              setActiveTab("signin");
+            }}
+            onConfirmationNeeded={(email, isNgo) => {
+              setSignInEmail(email);
+              setRegistrationNotice(
+                `Your ${isNgo ? "NGO " : ""}account was created. Confirm your email, then sign in here.`,
+              );
+              setActiveTab("signin");
+            }}
+          />
         </TabsContent>
       </Tabs>
     </div>
@@ -101,9 +135,16 @@ function GoogleButton() {
       disabled={busy}
       onClick={async () => {
         setBusy(true);
-        const r = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin + "/auth" });
-        if (r.error) {
-          toast.error("Google sign-in failed");
+        try {
+          const result = await lovable.auth.signInWithOAuth("google", { redirect_uri: window.location.origin + "/auth" });
+          if (result.error) {
+            logAuthError("Google sign-in failed", result.error);
+            toast.error("Google sign-in failed. Please try again.");
+          }
+        } catch (error) {
+          logAuthError("Google sign-in request failed", error);
+          toast.error("Google sign-in failed. Please try again.");
+        } finally {
           setBusy(false);
         }
       }}
@@ -120,9 +161,11 @@ function FieldError({ msg }: { msg?: string }) {
 function SignInForm({
   initialEmail,
   onEmailChange,
+  registrationNotice,
 }: {
   initialEmail: string;
   onEmailChange: (email: string) => void;
+  registrationNotice: string | null;
 }) {
   const navigate = useNavigate();
   const [email, setEmail] = useState(initialEmail);
@@ -143,16 +186,31 @@ function SignInForm({
         setErrors(next);
         if (Object.keys(next).length) return;
         setBusy(true);
-        const { error } = await supabase.auth.signInWithPassword({ email: em.data!, password });
-        setBusy(false);
-        if (error) {
-          const message = authErrorMessage(error);
+        try {
+          const { error } = await supabase.auth.signInWithPassword({ email: em.data, password });
+          if (error) {
+            logAuthError("password sign-in failed", error);
+            const message = authErrorMessage(authErrorDetails(error));
+            setErrors({ form: message });
+            toast.error(message);
+            return;
+          }
+          navigate({ to: "/dashboard" });
+        } catch (error) {
+          logAuthError("password sign-in request failed", error);
+          const message = authErrorMessage(authErrorDetails(error));
           setErrors({ form: message });
-          return toast.error(message);
+          toast.error(message);
+        } finally {
+          setBusy(false);
         }
-        navigate({ to: "/dashboard" });
       }}
     >
+      {registrationNotice && (
+        <div role="status" className="rounded-md border border-primary/30 bg-primary/5 p-3 text-sm">
+          {registrationNotice}
+        </div>
+      )}
       {errors.form && (
         <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm text-destructive">{errors.form}</div>
       )}
@@ -176,7 +234,13 @@ function SignInForm({
   );
 }
 
-function SignUpForm({ onExistingAccount }: { onExistingAccount: (email: string) => void }) {
+function SignUpForm({
+  onExistingAccount,
+  onConfirmationNeeded,
+}: {
+  onExistingAccount: (email: string) => void;
+  onConfirmationNeeded: (email: string, isNgo: boolean) => void;
+}) {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -185,19 +249,6 @@ function SignUpForm({ onExistingAccount }: { onExistingAccount: (email: string) 
   const [role, setRole] = useState<"donor" | "ngo">("donor");
   const [busy, setBusy] = useState(false);
   const [errors, setErrors] = useState<{ email?: string; password?: string; fullName?: string; ngoName?: string; form?: string; alreadyExists?: boolean }>({});
-  const [checkEmail, setCheckEmail] = useState(false);
-
-  if (checkEmail) {
-    return (
-      <div className="mt-6 rounded-md border p-4 text-sm">
-        <p className="font-medium">Confirm your email to finish</p>
-        <p className="mt-1 text-muted-foreground">
-          We sent a verification link to <span className="font-medium text-foreground">{email}</span>. Open it to activate your
-          account{role === "ngo" ? ", then complete your NGO profile so an admin can verify you." : "."}
-        </p>
-      </div>
-    );
-  }
 
   return (
     <form
@@ -209,7 +260,7 @@ function SignUpForm({ onExistingAccount }: { onExistingAccount: (email: string) 
         const em = emailSchema.safeParse(email);
         if (!em.success) next.email = em.error.issues[0].message;
         const pw = passwordSchema.safeParse(password);
-        if (!pw.success) next.password = pw.error.issues[0].message;
+        if (!pw.success) next.password = pw.error.issues.map((issue) => issue.message).join(" ");
         if (fullName.trim().length < 2) next.fullName = "Enter your full name";
         if (role === "ngo" && ngoName.trim().length < 2) next.ngoName = "Enter your organisation name";
         setErrors(next);
@@ -229,6 +280,7 @@ function SignUpForm({ onExistingAccount }: { onExistingAccount: (email: string) 
             },
           });
           if (error) {
+            logAuthError("account creation failed", error);
             const message = authErrorMessage(error);
             const alreadyExists = error.code === "user_already_exists" || /already registered|already exists/i.test(error.message);
             setErrors({ form: message, ...(alreadyExists ? { alreadyExists: true } : {}) });
@@ -243,14 +295,15 @@ function SignUpForm({ onExistingAccount }: { onExistingAccount: (email: string) 
           }
           // No session means email confirmation is required.
           if (!data.session) {
-            setCheckEmail(true);
-            toast.success("Account created — check your email to confirm.");
+            toast.success("Account created. Check your email to confirm, then sign in.");
+            onConfirmationNeeded(em.data, role === "ngo");
             return;
           }
-          toast.success(role === "ngo" ? "Account created. Complete your profile so an admin can verify your NGO." : "Account created!");
-          navigate({ to: "/onboarding" });
-        } catch {
-          const message = "We couldn't reach the registration service. Check your connection and try again.";
+          toast.success(role === "ngo" ? "NGO account created." : "Donor account created.");
+          navigate({ to: "/dashboard" });
+        } catch (error) {
+          logAuthError("account creation request failed", error);
+          const message = authErrorMessage(authErrorDetails(error));
           setErrors({ form: message });
           toast.error(message);
         } finally {
@@ -310,7 +363,7 @@ function SignUpForm({ onExistingAccount }: { onExistingAccount: (email: string) 
         <Label htmlFor="su-pw">Password</Label>
         <Input id="su-pw" type="password" autoComplete="new-password" value={password} onChange={(e) => setPassword(e.target.value)} aria-invalid={!!errors.password} />
         <FieldError msg={errors.password} />
-        <p className="mt-1 text-xs text-muted-foreground">At least 8 characters, with a letter and a number. Avoid common passwords.</p>
+        <p className="mt-1 text-xs text-muted-foreground">Use at least 8 characters, uppercase and lowercase letters, a number, and a special character. Passwords found in known breaches are blocked.</p>
       </div>
       <Button type="submit" className="w-full" disabled={busy}>{busy ? "Creating…" : "Create account"}</Button>
       <div className="relative my-2"><div className="absolute inset-0 flex items-center"><span className="w-full border-t" /></div><div className="relative flex justify-center text-xs uppercase"><span className="bg-background px-2 text-muted-foreground">or</span></div></div>
